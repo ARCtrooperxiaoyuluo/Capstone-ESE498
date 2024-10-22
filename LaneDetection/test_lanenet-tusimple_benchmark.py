@@ -13,7 +13,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 import model.lanenet as lanenet
 from model.utils import cluster_embed, fit_lanes, sample_from_curve, sample_from_IPMcurve, generate_json_entry, get_color
-from dataset import TuSimpleDataset
+from dataset_minicity_test import MinicityDataset
 
 
 def init_args():
@@ -62,7 +62,7 @@ if __name__ == '__main__':
 
     data_dir = args.data_dir
 
-    test_set = TuSimpleDataset(data_dir, phase='test')
+    test_set = MinicityDataset(data_dir)
     # test_set = TuSimpleDataset('/root/Projects/lane_detection/dataset/tusimple/test_set', phase='test_extend')
     # val_set = TuSimpleDataset('/root/Projects/lane_detection/dataset/tusimple/train_set', phase='val')
 
@@ -91,7 +91,7 @@ if __name__ == '__main__':
     # y_start, y_stop and y_num is calculated according to TuSimple Benchmark's setting
     y_start = np.round(160 * h / 720.)
     y_stop = np.round(710 * h / 720.)
-    y_num = 56
+    y_num = 28
     y_sample = np.linspace(y_start, y_stop, y_num, dtype=np.int16)
     x_sample = np.zeros_like(y_sample, dtype=np.float32) + w // 2
     c_sample = np.ones_like(y_sample, dtype=np.float32)
@@ -173,7 +173,13 @@ if __name__ == '__main__':
 
             '''sklearn mean_shift'''
             time_clst = time.time()
-            pred_insts = cluster_embed(embeddings, pred_bin_batch, band_width=0.5)
+            try:
+                pred_insts = cluster_embed(embeddings, pred_bin_batch, band_width=0.5)
+            except ValueError as e:
+                print(f"Clustering error: {e}")
+                print(embeddings.shape)
+                print(pred_bin_batch.shape)
+                continue  # Skip to the next batch
             time_clst = time.time() - time_clst
 
             '''Curve Fitting'''

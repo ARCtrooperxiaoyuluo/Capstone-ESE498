@@ -40,10 +40,10 @@ if __name__ == '__main__':
     args = init_args()
 
     VGG_MEAN = np.array([103.939, 116.779, 123.68]).astype(np.float32)
-    VGG_MEAN = torch.from_numpy(VGG_MEAN).cuda().view([1, 3, 1, 1])
+    VGG_MEAN = torch.from_numpy(VGG_MEAN).to('cpu').view([1, 3, 1, 1])
     batch_size = 16  # batch size per GPU
     learning_rate = 1e-3  # 1e-3
-    num_steps = 2000000
+    num_steps = 2000 # modified
     num_workers = 4
     ckpt_epoch_interval = 10  # save a model checkpoint every X epochs
     val_step_interval = 50  # perform a validation step every X traning steps
@@ -126,7 +126,8 @@ if __name__ == '__main__':
     sum_bin_precision_train, sum_bin_precision_val = 0, 0
     sum_bin_recall_train, sum_bin_recall_val = 0, 0
     sum_bin_F1_train, sum_bin_F1_val = 0, 0
-
+    #print(len(train_loader)) ~200
+    #print(len(val_loader)) ~20
     '''session'''
     data_iter = {'train': iter(dataloaders['train']), 'val': iter(dataloaders['val'])}
     for step in range(step, num_steps):
