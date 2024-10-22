@@ -23,7 +23,7 @@ def discriminative_loss_single(embedding, inst_label, delta_v, delta_d, param_va
     embeddings = []
     # select embedding pixel with inst_label
     for i in range(num_classes):
-        feature = torch.transpose(torch.masked_select(embedding, inst_masks[i, :, :]).view(c, -1), 0, 1)
+        feature = torch.transpose(torch.masked_select(embedding, inst_masks[i, :, :].bool()).view(c, -1), 0, 1)
         embeddings.append(feature)
 
     centers = []
