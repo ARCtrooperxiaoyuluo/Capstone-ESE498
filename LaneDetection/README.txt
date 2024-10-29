@@ -12,4 +12,4 @@ python test_lanenet-tusimple_benchmark.py ^
 
 To train a new model from scratch, update train_tasks_val.json and train_tasks_train.json with CVAT2TuSimple.m. Labeled data in CVAT format must be present. 
 Command:
-python train_lanenet.py --data_dir /Users/winston/Desktop/InstanceSegmentation/MinicityDataset --arch fcn --ckpt_path D:\Courses\ESE498\ckpt_FCN-Res18-1E1D-b1d0.01-v0.2d1_epoch-590.pth
+python train_lanenet.py --data_dir D:\Courses\ESE498\InstanceSegmentation\MinicityDataset --arch fcn --ckpt_path D:\Courses\ESE498\ckpt_FCN-Res18-1E1D-b1d0.01-v0.2d1_epoch-590.pth
