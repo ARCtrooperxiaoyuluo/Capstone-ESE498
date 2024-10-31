@@ -40,7 +40,7 @@ def discriminative_loss_single(embedding, inst_label, delta_v, delta_d, param_va
     loss_var /= num_classes
 
     if num_classes == 1:
-        return loss_var, loss_var, torch.zeros(1)  # .to(device)
+        return loss_var, loss_var, torch.zeros(1).to(device), torch.zeros(1).to(device)#modified
 
     # inter-class loss
     centers = torch.cat(centers, dim=0)

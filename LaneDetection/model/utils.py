@@ -23,10 +23,10 @@ def fit_lanes(inst_pred):
     h, w = inst_pred.shape
 
 
-    inst_pred_expand = inst_pred.view(-1)
+    inst_pred_expand = inst_pred.view(-1) #flattens the 288*512 tensor
 
     inst_unique = torch.unique(inst_pred_expand)
-
+    print(inst_unique)
     # extract points coordinates for each lane
     lanes = []
     for inst_idx in inst_unique:
