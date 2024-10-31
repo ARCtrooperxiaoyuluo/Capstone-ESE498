@@ -89,9 +89,9 @@ if __name__ == '__main__':
     M_inv = cv2.getPerspectiveTransform(dst, src)
     
     # y_start, y_stop and y_num is calculated according to TuSimple Benchmark's setting
-    y_start = np.round(160 * h / 720.)
+    y_start = np.round(240 * h / 720.)
     y_stop = np.round(710 * h / 720.)
-    y_num = 28
+    y_num = 48
     y_sample = np.linspace(y_start, y_stop, y_num, dtype=np.int16)
     x_sample = np.zeros_like(y_sample, dtype=np.float32) + w // 2
     c_sample = np.ones_like(y_sample, dtype=np.float32)
@@ -219,6 +219,7 @@ if __name__ == '__main__':
                         curves_pts_pred.append(xy_pred)
                 else:
                     '''Directly fit curves on original images'''
+                    #print(pred_inst.shape) #(288.512)
                     curves_param = fit_lanes(pred_inst)
                     curves_pts_pred=sample_from_curve(curves_param,pred_inst, y_sample)
 
@@ -314,7 +315,7 @@ if __name__ == '__main__':
                         # cv2.imshow('input',rgb)
                         # cv2.imshow('bin_pred', pred_bin_rgb)
 
-                    cv2.waitKey(0)  # wait forever until a key stroke
+                    cv2.waitKey(1)  # wait forever until a key stroke
                     # cv2.waitKey(1)  # wait for 1ms
 
                 time_fit = time.time() - time_fit
