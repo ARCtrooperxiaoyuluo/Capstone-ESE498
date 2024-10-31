@@ -1,0 +1,6 @@
+File strcture in this folder:
+train_original/  #data
+  0010.jpg
+  ...
+annotations_1.xml #label
+annotations_1.xml
