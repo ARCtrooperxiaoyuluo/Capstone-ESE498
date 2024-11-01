@@ -1,5 +1,7 @@
 To run the model, a checkpoint file, which includes all the weights, needs to be included. The checkpoint file is too large for Github, so there's a link to Baidu Drive: https://pan.baidu.com/s/1LrvIVC_fdTAlYcRoEAKNLQ#list/path=%2F (提取码: u6wa) I trained another checkpoint which works better: https://drive.google.com/file/d/1Q6AFOM_yUyVG2X6rx1_UMBfj_lQmSWes/view?usp=sharing
 
+Testing images can be found here, test folder includes pictures that hasn't been seen by model yet. https://drive.google.com/file/d/15HXv9SPGq0Qaj7IEaz2pcytgI53bD98T/view?usp=sharing
+
 This package is copied and modified based on this repo: https://github.com/ShenhanQian/Lane_Detection-An_Instance_Segmentation_Approach/blob/master/README.md.
 The main modifications eliminate the need for the CUDA and TuSimple datasets.
 
