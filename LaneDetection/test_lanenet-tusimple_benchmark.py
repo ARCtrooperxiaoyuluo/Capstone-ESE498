@@ -38,7 +38,6 @@ def init_weights(model):
 
 
 if __name__ == '__main__':
-
     args = init_args()
 
     '''Test config'''
@@ -162,7 +161,7 @@ if __name__ == '__main__':
             path_batch = batch['path']
 
             input_batch = input_batch.to(device)
-
+            #print(input_batch.shape)
             # forward
             embeddings, logit = net(input_batch)
 
@@ -315,7 +314,7 @@ if __name__ == '__main__':
                         # cv2.imshow('input',rgb)
                         # cv2.imshow('bin_pred', pred_bin_rgb)
 
-                    cv2.waitKey(1)  # wait forever until a key stroke
+                    cv2.waitKey(0)  # wait forever until a key stroke
                     # cv2.waitKey(1)  # wait for 1ms
 
                 time_fit = time.time() - time_fit

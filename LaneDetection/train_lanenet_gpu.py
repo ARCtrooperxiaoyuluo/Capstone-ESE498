@@ -40,7 +40,7 @@ if __name__ == '__main__':
     args = init_args()
 
     VGG_MEAN = np.array([103.939, 116.779, 123.68]).astype(np.float32)
-    VGG_MEAN = torch.from_numpy(VGG_MEAN).to('cpu').view([1, 3, 1, 1])
+    VGG_MEAN = torch.from_numpy(VGG_MEAN).to('cuda' if torch.cuda.is_available() else 'cpu').view([1, 3, 1, 1])
     batch_size = 4  # batch size per GPU
     learning_rate = 1e-3  # 1e-3
     num_steps = 200000 # modified
@@ -50,11 +50,11 @@ if __name__ == '__main__':
     train_start_time = time.strftime('%Y-%m-%d_%H-%M-%S', time.localtime(time.time()))
 
     if torch.cuda.is_available():
-        device = torch.device("cuda:0")
+        device = torch.device("cuda")
         batch_size *= torch.cuda.device_count()
         print("Let's use", torch.cuda.device_count(), "GPUs!")
     else:
-        device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+        device = torch.device("cpu")
         print("Let's use CPU")
     print("Batch size: %d" % batch_size)
 
@@ -85,50 +85,31 @@ if __name__ == '__main__':
     print('Architecture:', arch)
     net = eval(arch)()
     
-    # net = lanenet.LaneNet_FCN_Res_1E1D()
-    # net = lanenet.LaneNet_FCN_Res_1E2D()
-    # net = lanenet.LaneNet_ENet_1E1D()
-    # net = lanenet.LaneNet_ENet_1E2D()
-    # net = lanenet.LaneNet_ICNet_1E2D()
-    # net = lanenet.LaneNet_ICNet_1E1D()
-
     net = nn.DataParallel(net)
     net.to(device)
 
     params_to_update = net.parameters()
-    # for name, param in net.named_parameters():
-    #     if param.requires_grad == True:
-    #         print("\t", name)
-    # optimizer = optim.SGD(params_to_update, lr=learning_rate, momentum=0.9)
     optimizer = optim.Adam(params_to_update)
     MSELoss = nn.MSELoss()
 
     if args.ckpt_path is not None:
-        checkpoint = torch.load(args.ckpt_path,map_location=torch.device('cpu'),weights_only=False) #modified
-        net.load_state_dict(checkpoint['model_state_dict'], strict=False)  # , strict=False
+        checkpoint = torch.load(args.ckpt_path, map_location=device)  # Modified to load to correct device
+        net.load_state_dict(checkpoint['model_state_dict'], strict=False)
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
-        #epoch = checkpoint['epoch']
-        #step = checkpoint['step']
-        step = 0  # by default, we reset step and epoch value
-        epoch = 1
-
-        loss = checkpoint['loss']
+        step = checkpoint.get('step', 0)  # Step value from checkpoint or default to 0
+        epoch = checkpoint.get('epoch', 1)  # Epoch value from checkpoint or default to 1
+        loss = checkpoint.get('loss', None)
         print('Checkpoint loaded.')
-
     else:
         net.apply(init_weights)
         step = 0
         epoch = 1
-
         print('Network parameters initialized.')
     
-    # accumulators to calculate statistics in each epoch 
     sum_bin_precision_train, sum_bin_precision_val = 0, 0
     sum_bin_recall_train, sum_bin_recall_val = 0, 0
     sum_bin_F1_train, sum_bin_F1_val = 0, 0
-    #print(len(train_loader)) ~200
-    #print(len(val_loader)) ~20
-    '''session'''
+
     data_iter = {'train': iter(dataloaders['train']), 'val': iter(dataloaders['val'])}
     for step in range(step, num_steps):
         start_time = time.time()
@@ -138,7 +119,6 @@ if __name__ == '__main__':
             phase = 'val'
             net.eval()
 
-        '''load dataset'''
         try:
             batch = next(data_iter[phase])
         except StopIteration:
@@ -149,7 +129,7 @@ if __name__ == '__main__':
                 epoch += 1
                 if epoch % ckpt_epoch_interval == 0:
                     ckpt_dir = 'check_point/ckpt_%s_%s' % (train_start_time, args.tag)
-                    if os.path.exists(ckpt_dir) is False:
+                    if not os.path.exists(ckpt_dir):
                         os.mkdir(ckpt_dir)
                     ckpt_path = os.path.join(ckpt_dir, 'ckpt_%s_epoch-%d.pth' % (train_start_time, epoch))
                     torch.save({
@@ -182,63 +162,44 @@ if __name__ == '__main__':
                 sum_bin_recall_val = 0
                 sum_bin_F1_val = 0
 
-        inputs = batch['input_tensor']
-        labels_bin = batch['binary_tensor']
-        labels_inst = batch['instance_tensor']
+        inputs = batch['input_tensor'].to(device)
+        labels_bin = batch['binary_tensor'].to(device)
+        labels_inst = batch['instance_tensor'].to(device)
 
-        inputs = inputs.to(device)
-        labels_bin = labels_bin.to(device)
-        labels_inst = labels_inst.to(device)
-
-        # zero the parameter gradients
         optimizer.zero_grad()
 
-        # forward
         embeddings, logit = net(inputs)
 
-        # compute loss
         preds_bin = torch.argmax(logit, dim=1, keepdim=True)
         preds_bin_expand = preds_bin.view(preds_bin.shape[0] * preds_bin.shape[1] * preds_bin.shape[2] * preds_bin.shape[3])
         labels_bin_expand = labels_bin.view(labels_bin.shape[0] * labels_bin.shape[1] * labels_bin.shape[2])
 
-        '''Floating Loss weighting determined by label proportion'''
         bin_count = torch.bincount(labels_bin_expand)
         bin_prop = bin_count.float() / torch.sum(bin_count)
-        weight_bin = torch.tensor(1) / (bin_prop + 0.2)  # max proportion: 5:1
-        # weight_bin = 1. / torch.log(bin_prop + 1.02)  # max proportion: 50:1
+        weight_bin = torch.tensor(1).to(device) / (bin_prop + 0.2)
 
-        '''Fixed loss weighting'''
-        # weight_bin = torch.tensor([1, 5], dtype=torch.float).to(device)
-
-        # binary segmentation loss
-        '''Multi-class CE Loss'''
         CrossEntropyLoss = nn.CrossEntropyLoss(weight=weight_bin)
         try:
             loss_bin = CrossEntropyLoss(logit, labels_bin)
             loss_disc, loss_v, loss_d, loss_r = discriminative_loss(embeddings,
-                                                                labels_inst,
-                                                                delta_v=0.2,
-                                                                delta_d=1,
-                                                                param_var=.5,
-                                                                param_dist=.5,
-                                                                param_reg=0.001)
+                                                                    labels_inst,
+                                                                    delta_v=0.2,
+                                                                    delta_d=1,
+                                                                    param_var=.5,
+                                                                    param_dist=.5,
+                                                                    param_reg=0.001)
         except RuntimeError as e:
             print(f"RuntimeError at step {step}: {e}")
             print("Labels_bin tensor:", labels_bin)
             print("Labels_inst tensor:", labels_inst)
-            continue  # Skip this batch and proceed to the next step
-
-        # discriminative loss
-        
+            continue
 
         loss = loss_bin + loss_disc * 0.01
 
-        # backward + optimize only if in training phase
         if phase == 'train':
             loss.backward()
             optimizer.step()
 
-        # Statistics
         bin_TP = torch.sum((preds_bin_expand.detach() == labels_bin_expand.detach()) & (preds_bin_expand.detach() == 1))
         bin_precision = bin_TP.double() / (torch.sum(preds_bin_expand.detach() == 1).double() + 1e-6)
         bin_recall = bin_TP.double() / (torch.sum(labels_bin_expand.detach() == 1).double() + 1e-6)
@@ -287,9 +248,7 @@ if __name__ == '__main__':
                           loss_disc.item(), loss_v.item(), loss_d.item(), loss_r.item(),
                           step_time))
 
-            '''Save images into Tensorflow summary'''
-
-            num_images = 3  # Select the number of images to be saved in each val iteration
+            num_images = 3
 
             inputs_images = (inputs + VGG_MEAN / 255.)[:num_images, [2, 1, 0], :, :]
             writer.add_images('image', inputs_images, step)
@@ -299,23 +258,5 @@ if __name__ == '__main__':
             labels_bin_img = labels_bin.view(labels_bin.shape[0], 1, labels_bin.shape[1], labels_bin.shape[2])
             writer.add_images('Bin Label', labels_bin_img[:num_images], step)
 
-            embedding_img = F.normalize(embeddings[:num_images], 1, 1) / 2. + 0.5  # a tricky way to visualize the embedding
+            embedding_img = F.normalize(embeddings[:num_images], 1, 1) / 2. + 0.5
             writer.add_images('Embedding', embedding_img, step)
-
-            # # Embeddings can be saved and viewed by tensorboard, but the process is computationally costly
-            # # select embedding pixels with inst_fg_mask
-            # embedding = embeddings[0]
-            # c, h, w = embedding.shape
-            # inst_fg_mask = labels_inst[idx] != 0  # .to(device)
-            # embeddings_fg = torch.transpose(torch.masked_select(embedding, inst_fg_mask).view(c, -1), 0, 1)
-            # label_inst_fg = torch.masked_select(labels_inst[idx], inst_fg_mask)
-            # metadata = [str(i.item()) for i in label_inst_fg]
-            # writer.add_embedding(
-            #     embeddings_fg,
-            #     metadata=label_inst_fg,
-            #     # label_img=embedding.detach(),
-            #     global_step=step)
-
-
-
-
