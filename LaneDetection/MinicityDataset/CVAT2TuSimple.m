@@ -66,23 +66,25 @@ for l = 1:2
             fprintf(fileID2, '%s\n', jsonStr);
         end
         img = im2double(img);
+        imgf = flip(img,2);
         for j=1:expand_factor %Output augmented images according to expansion factor
             flip_flag = round(rand(1));
             if flip_flag
-                img = flip(img,2);
+                imgu = imgf;
                 imageData.lanes = {1280-lanes(1,:), 1280-lanes(2,:), 1280-lanes(3,:), 1280-lanes(4,:)};
                 imageData.lanes{1}(imageData.lanes{1}==1282) = -2;% Set empty back to empty
                 imageData.lanes{2}(imageData.lanes{2}==1282) = -2;
                 imageData.lanes{3}(imageData.lanes{3}==1282) = -2;
                 imageData.lanes{4}(imageData.lanes{4}==1282) = -2;
             else
+                imgu = img;
                 imageData.lanes = {lanes(1,:), lanes(2,:), lanes(3,:), lanes(4,:)};  % Lists for lanes
             end
             imageData.h_samples = h_samples;     % Assign predefined h_samples
             imageData.raw_file = strcat(outDir, num2str(imgcount),'.jpg');
             jsonStr = jsonencode(imageData);
             % Convert RGB image to HSV for hue and saturation adjustments
-            hsvImg = rgb2hsv(img);
+            hsvImg = rgb2hsv(imgu);
             % Adjust Hue (H)
             hsvImg(:,:,1) = hsvImg(:,:,1) + 0.2*rand(1)-0.1;
             hsvImg(:,:,1) = mod(hsvImg(:,:,1), 1);
