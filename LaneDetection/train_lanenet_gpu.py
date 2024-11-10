@@ -41,7 +41,7 @@ if __name__ == '__main__':
 
     VGG_MEAN = np.array([103.939, 116.779, 123.68]).astype(np.float32)
     VGG_MEAN = torch.from_numpy(VGG_MEAN).to('cuda' if torch.cuda.is_available() else 'cpu').view([1, 3, 1, 1])
-    batch_size = 4  # batch size per GPU
+    batch_size = 8  # batch size per GPU
     learning_rate = 1e-3  # 1e-3
     num_steps = 200000 # modified
     num_workers = 1
@@ -93,7 +93,7 @@ if __name__ == '__main__':
     MSELoss = nn.MSELoss()
 
     if args.ckpt_path is not None:
-        checkpoint = torch.load(args.ckpt_path, map_location=device)  # Modified to load to correct device
+        checkpoint = torch.load(args.ckpt_path, map_location=device,weights_only = True)  # Modified to load to correct device
         net.load_state_dict(checkpoint['model_state_dict'], strict=False)
         optimizer.load_state_dict(checkpoint['optimizer_state_dict'])
         step = checkpoint.get('step', 0)  # Step value from checkpoint or default to 0
@@ -190,8 +190,8 @@ if __name__ == '__main__':
                                                                     param_reg=0.001)
         except RuntimeError as e:
             print(f"RuntimeError at step {step}: {e}")
-            print("Labels_bin tensor:", labels_bin)
-            print("Labels_inst tensor:", labels_inst)
+            #print("Labels_bin tensor:", labels_bin)
+            #print("Labels_inst tensor:", labels_inst)
             continue
 
         loss = loss_bin + loss_disc * 0.01

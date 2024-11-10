@@ -104,8 +104,8 @@ class MinicityDataset(Dataset):
 
 if __name__ == '__main__':
     
-    train_set = MinicityDataset('/Users/winston/Desktop/InstanceSegmentation/MinicityDataset', phase='train')
-    val_set = MinicityDataset('/Users/winston/Desktop/InstanceSegmentation/MinicityDataset', phase='val')
+    train_set = MinicityDataset('D:\Courses\ESE498\InstanceSegmentation\MinicityDataset', phase='train')
+    val_set = MinicityDataset('D:\Courses\ESE498\InstanceSegmentation\MinicityDataset', phase='val')
 
     # train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=4)
     # valid_loader = DataLoader(valid_set, batch_size=4, shuffle=True, num_workers=1)

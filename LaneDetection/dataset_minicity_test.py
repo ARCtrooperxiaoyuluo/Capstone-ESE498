@@ -57,7 +57,7 @@ class MinicityDataset(Dataset):
 
 if __name__ == '__main__':
     
-    test_set = MinicityDataset('/root/Projects/lane_detection/dataset/tusimple/test_set')
+    test_set = MinicityDataset('D:\Courses\ESE498\InstanceSegmentation\MinicityDataset')
 
     # train_loader = DataLoader(train_set, batch_size=4, shuffle=True, num_workers=4)
     # valid_loader = DataLoader(valid_set, batch_size=4, shuffle=True, num_workers=1)
