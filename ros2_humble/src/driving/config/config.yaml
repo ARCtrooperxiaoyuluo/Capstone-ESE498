@@ -1,0 +1,6 @@
+pid_controller:
+  kp: 0.01
+  ki: 0.034758
+  kd: 0.0015
+  setpoint_speed: 15.0  # Target speed in km/h
+
