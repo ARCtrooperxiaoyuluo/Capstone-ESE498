@@ -1,0 +1,41 @@
+import RPi.GPIO as IO
+import time
+import sys
+import argparse
+import busio
+import smbus
+from time import sleep
+import adafruit_mcp3xxx.mcp3008 as MCP
+from adafruit_mcp3xxx.analog_in import AnalogIn
+import math
+
+# Setup GPIO
+IO.setwarnings(False)
+IO.setmode(IO.BCM)
+
+GPIO_num = 16
+IO.setup(GPIO_num, IO.IN, IO.PUD_UP)
+
+# Parameters for sampling rate
+sampling_rate_hz = 50  # Desired sampling rate in Hz
+sample_interval = 1.0 / sampling_rate_hz
+
+# Open file in append mode
+with open('encoder_rawdata.txt', 'a') as file:
+    while True:
+        start_time = time.time()
+        
+        # Read the GPIO pin value
+        curr_pin_val = IO.input(GPIO_num)
+        
+        # Write the current pin value to the file
+        file.write(f"{time.time()}: {curr_pin_val}\n")
+        
+        # Print to the console (optional)
+        print(curr_pin_val)
+        
+        # Sleep to maintain the desired sampling rate
+        elapsed_time = time.time() - start_time
+        if elapsed_time < sample_interval:
+            time.sleep(sample_interval - elapsed_time)
+
